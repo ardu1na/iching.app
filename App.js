@@ -1,106 +1,54 @@
 import React, { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Button } from 'react-native';
-
-// Importa el JSON
+import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import hexagramas from './assets/hexagramas.json';
 
-// Función para buscar hexagramas por el campo 'lineas'
-function buscarHexagrama(lineasBuscadas) {
-  console.log('Buscando hexagrama para las líneas:', lineasBuscadas); // Log para depuración
 
-  // Iteramos sobre los hexagramas y comparamos el array de 'lineas' con el resultado.
-  const found = hexagramas.find((hexagrama) => {
-    const lineasHexagrama = JSON.parse(hexagrama.lineas); // Convertir la cadena a array
+const buscarHexagrama = (lineasBuscadas) => {
+  return hexagramas.find((hexagrama) => {
+    const lineasHexagrama = JSON.parse(hexagrama.lineas);
     return JSON.stringify(lineasHexagrama) === JSON.stringify(lineasBuscadas);
   });
-  
-  if (found) {
-    console.log('Hexagrama encontrado:', found); // Log cuando se encuentra un hexagrama
-  } else {
-    console.log('No se encontró hexagrama para las líneas:', lineasBuscadas); // Log si no se encuentra el hexagrama
-  }
+};
 
-  return found;
-}
-
-
-// Función principal para generar una tirada de hexagramas
-function generarTirada() {
+const generarTirada = () => {
   const posibilidades = [1, 2, 3, 4];
   const weights = [3, 3, 1, 1];
-  const tirada = [];
-
-  for (let i = 0; i < 6; i++) {
+  const tirada = Array.from({ length: 6 }, () => {
     const randomIndex = getRandomIndex(weights);
-    tirada.push(posibilidades[randomIndex]);
-  }
+    return posibilidades[randomIndex];
+  });
 
-  // Determinar si es mutable
   const mutable = tirada.includes(3) || tirada.includes(4);
-
   return { tirada, mutable };
-}
+};
 
-// Función de ayuda para seleccionar índice basado en pesos
-function getRandomIndex(weights) {
+const getRandomIndex = (weights) => {
   const sum = weights.reduce((a, b) => a + b);
   let rand = Math.random() * sum;
-  for (let i = 0; i < weights.length; i++) {
-    if (rand < weights[i]) {
-      return i;
-    }
-    rand -= weights[i];
-  }
-}
+  return weights.findIndex((weight) => (rand -= weight) < 0);
+};
 
-// Función para obtener el hexagrama inicial H1
-function obtenerH1(tirada) {
-  const h1 = tirada.map(value => {
-    if (value === 3) return 1;
-    if (value === 4) return 2;
-    return value;
-  });
+const obtenerH1 = (tirada) => {
+  const h1 = tirada.map(value => (value === 3 ? 1 : value === 4 ? 2 : value));
+  return buscarHexagrama(h1);
+};
 
-  console.log('H1:', h1); // Log de las líneas para H1
-  const hexagramaH1 = buscarHexagrama(h1);
-  console.log('Hexagrama H1:', hexagramaH1); // Log para ver qué se encontró
+const obtenerH2 = (tirada, mutable) => {
+  const h2 = mutable 
+    ? tirada.map(value => (value === 3 ? 2 : value === 4 ? 1 : value)) 
+    : tirada;
+  return buscarHexagrama(h2);
+};
 
-  return hexagramaH1; // Retorna la información del hexagrama h1
-}
-
-// Función para obtener el hexagrama mutado H2
-function obtenerH2(tirada, mutable) {
-  if (!mutable) {
-    console.log('H2 es igual a H1 porque no es mutable');
-    return obtenerH1(tirada); // Si no es mutable, h2 = h1
-  }
-
-  const h2 = tirada.map(value => {
-    if (value === 3) return 2;
-    if (value === 4) return 1;
-    return value;
-  });
-
-  console.log('H2:', h2); // Log de las líneas para H2
-  const hexagramaH2 = buscarHexagrama(h2);
-  console.log('Hexagrama H2:', hexagramaH2); // Log para ver qué se encontró
-
-  return hexagramaH2; // Retorna la información del hexagrama h2
-}
-
-// Función para obtener las líneas mutables
-function obtenerLineasMutables(tirada) {
-  const mutables = [];
-
-  tirada.forEach((value, index) => {
+const obtenerLineasMutables = (tirada) => {
+  return tirada.reduce((mutables, value, index) => {
     if (value === 3 || value === 4) {
-      mutables.push(index + 1); // +1 para que comience desde 1
+      mutables.push(index + 1);
     }
-  });
-
-  return mutables;
-}
+    return mutables;
+  }, []);
+};
 
 export default function App() {
   const [tirada, setTirada] = useState(null);
@@ -110,12 +58,9 @@ export default function App() {
 
   const realizarTirada = () => {
     const { tirada, mutable } = generarTirada();
-    console.log('Tirada generada:', tirada); // Log para ver la tirada generada
     setTirada(tirada);
-    const h1 = obtenerH1(tirada);
-    setHexagramaH1(h1);
-    const h2 = obtenerH2(tirada, mutable);
-    setHexagramaH2(h2);
+    setHexagramaH1(obtenerH1(tirada));
+    setHexagramaH2(obtenerH2(tirada, mutable));
     setLineasMutables(obtenerLineasMutables(tirada));
   };
 
@@ -123,17 +68,18 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>I-CHING LIBRE</Text>
       <Text style={styles.version}>v 0.0</Text>
-
-      <Button title="Realizar tirada" onPress={realizarTirada} />
+      <TouchableOpacity onPress={realizarTirada} style={styles.button}>
+  <Text style={styles.buttonText}>Realizar tirada</Text>
+</TouchableOpacity>
 
       {tirada && (
-        <View style={styles.result}>
-          <Text>Tirada: {tirada.join(', ')}</Text>
-          <Text>Hexagrama H1: {hexagramaH1 ? hexagramaH1.nombre : "No encontrado"}</Text>
-          <Text>Hexagrama H2: {hexagramaH2 ? hexagramaH2.nombre : "No encontrado"}</Text>
-          <Text>Líneas Mutables: {lineasMutables.join(', ')}</Text>
-        </View>
-      )}
+  <View key={tirada.join(', ')} style={styles.result}>
+    <Text>Tirada: {tirada.join(', ')}</Text>
+    <Text>Hexagrama H1: {hexagramaH1 ? hexagramaH1.nombre : "No encontrado"}</Text>
+    <Text>Hexagrama H2: {hexagramaH2 ? hexagramaH2.nombre : "No encontrado"}</Text>
+    <Text>Líneas Mutables: {lineasMutables.join(', ')}</Text>
+  </View>
+)}
 
       <StatusBar style="auto" />
     </View>
@@ -161,5 +107,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: 'center',
   },
+  button: {
+  padding: 10,
+  backgroundColor: '#007BFF',
+  borderRadius: 5,
+  alignItems: 'center',
+},
+
 });
 
