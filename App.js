@@ -67,12 +67,12 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>I-CHING LIBRE</Text>
-      <Text style={styles.version}>v 0.0</Text>
+      <Text style={styles.version}>v 0.2</Text>
       <TouchableOpacity onPress={realizarTirada} style={styles.button}>
   <Text style={styles.buttonText}>Realizar tirada</Text>
 </TouchableOpacity>
 
-      {tirada && (
+     {tirada && (
   <View key={tirada.join(', ')} style={styles.result}>
     <Text>Tirada: {tirada.join(', ')}</Text>
     <Text>Hexagrama H1: {hexagramaH1 ? hexagramaH1.nombre : "No encontrado"}</Text>
@@ -80,6 +80,7 @@ export default function App() {
     <Text>Líneas Mutables: {lineasMutables.join(', ')}</Text>
   </View>
 )}
+
 
       <StatusBar style="auto" />
     </View>
